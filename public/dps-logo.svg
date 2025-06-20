@@ -1,0 +1,6 @@
+<svg width="180" height="48" viewBox="0 0 180 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="48" height="48" rx="12" fill="#283593"/>
+  <text x="60" y="32" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="bold" fill="#283593">Delhi Public School</text>
+  <circle cx="24" cy="24" r="14" fill="#fff" stroke="#fff" stroke-width="2"/>
+  <path d="M24 16L28 32L24 28L20 32L24 16Z" fill="#283593"/>
+</svg> 
