@@ -42,10 +42,11 @@ const masterItems = [
 export const MainLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const [openMasters, setOpenMasters] = React.useState(true);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
+  const isAdmin = user?.role === 'admin';
 
   const handleMastersClick = () => {
     setOpenMasters(!openMasters);
@@ -84,103 +85,83 @@ export const MainLayout = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       <Drawer
         variant="permanent"
         sx={{
-          width: spacing.drawer.width,
+          width: 280,
           flexShrink: 0,
           '& .MuiDrawer-paper': {
-            width: spacing.drawer.width,
+            width: 280,
             boxSizing: 'border-box',
-            bgcolor: colors.background.drawer,
+            bgcolor: colors.primary.main,
             color: colors.primary.contrastText,
-            display: 'flex',
-            flexDirection: 'column',
           },
         }}
       >
-        <Box sx={{ p: spacing.padding.small, borderBottom: `1px solid ${colors.divider}` }}>
-          <Typography 
-            variant="h6" 
-            sx={{ 
-              color: colors.primary.contrastText, 
-              fontWeight: typography.fontWeight.medium 
-            }}
-          >
+        <Box sx={{ p: spacing.padding.medium }}>
+          <Typography variant="h6" sx={{ fontWeight: typography.fontWeight.bold, pb: spacing.padding.medium }}>
             School Management
           </Typography>
         </Box>
-        <List sx={{ flex: 1 }}>
-          {/* Masters Section */}
-          <ListItem disablePadding>
-            <ListItemButton
-              onClick={handleMastersClick}
-              sx={{
-                py: 1.5,
-                '&:hover': {
-                  bgcolor: colors.action.hover,
-                },
-              }}
-            >
-              <ListItemIcon sx={{ color: colors.primary.contrastText, minWidth: 40 }}>
-                <SettingsIcon />
-              </ListItemIcon>
-              <ListItemText 
-                primary="Masters" 
-                sx={{ 
-                  '& .MuiListItemText-primary': { 
-                    fontSize: typography.fontSize.small,
-                    fontWeight: openMasters ? typography.fontWeight.medium : typography.fontWeight.regular
-                  } 
-                }}
-              />
-              {openMasters ? <ExpandLess /> : <ExpandMore />}
-            </ListItemButton>
-          </ListItem>
 
-          {/* Masters Subitems */}
-          <Collapse in={openMasters} timeout="auto" unmountOnExit>
-            <List component="div" disablePadding>
-              {masterItems.map((item) => (
-                <ListItem key={item.text} disablePadding>
-                  <ListItemButton
-                    onClick={() => navigate(item.path)}
-                    selected={location.pathname === item.path}
-                    sx={{
-                      pl: 4,
-                      py: 1.5,
-                      '&.Mui-selected': {
-                        bgcolor: colors.action.selected,
-                        '&:hover': {
-                          bgcolor: colors.action.selectedHover,
-                        },
-                      },
-                      '&:hover': {
-                        bgcolor: colors.action.hover,
-                      },
-                    }}
-                  >
-                    <ListItemIcon sx={{ color: colors.primary.contrastText, minWidth: 40 }}>
-                      {item.icon}
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary={item.text} 
-                      sx={{ 
-                        '& .MuiListItemText-primary': { 
-                          fontSize: typography.fontSize.small,
-                          fontWeight: location.pathname === item.path ? typography.fontWeight.medium : typography.fontWeight.regular
-                        } 
-                      }}
-                    />
-                  </ListItemButton>
-                </ListItem>
-              ))}
-            </List>
-          </Collapse>
+        <List>
+          {/* Only show Masters section for admin */}
+          {isAdmin && (
+            <>
+              <ListItem disablePadding>
+                <ListItemButton onClick={handleMastersClick}>
+                  <ListItemIcon sx={{ color: colors.primary.contrastText, minWidth: 40 }}>
+                    <SettingsIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Masters" />
+                  {openMasters ? <ExpandLess /> : <ExpandMore />}
+                </ListItemButton>
+              </ListItem>
 
-          {/* Main Items */}
-          {mainItems.map((item) => (
+              <Collapse in={openMasters} timeout="auto" unmountOnExit>
+                <List component="div" disablePadding>
+                  {masterItems.map((item) => (
+                    <ListItem key={item.text} disablePadding>
+                      <ListItemButton
+                        onClick={() => navigate(item.path)}
+                        selected={location.pathname === item.path}
+                        sx={{
+                          pl: 4,
+                          py: 1.5,
+                          '&.Mui-selected': {
+                            bgcolor: colors.action.selected,
+                            '&:hover': {
+                              bgcolor: colors.action.selectedHover,
+                            },
+                          },
+                          '&:hover': {
+                            bgcolor: colors.action.hover,
+                          },
+                        }}
+                      >
+                        <ListItemIcon sx={{ color: colors.primary.contrastText, minWidth: 40 }}>
+                          {item.icon}
+                        </ListItemIcon>
+                        <ListItemText 
+                          primary={item.text} 
+                          sx={{ 
+                            '& .MuiListItemText-primary': { 
+                              fontSize: typography.fontSize.small,
+                              fontWeight: location.pathname === item.path ? typography.fontWeight.medium : typography.fontWeight.regular
+                            } 
+                          }}
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                  ))}
+                </List>
+              </Collapse>
+            </>
+          )}
+
+          {/* Show only Students for faculty, show all main items for admin */}
+          {(isAdmin ? mainItems : mainItems.slice(0, 1)).map((item) => (
             <ListItem key={item.text} disablePadding>
               <ListItemButton
                 onClick={() => navigate(item.path)}
@@ -216,41 +197,20 @@ export const MainLayout = () => {
         </List>
 
         {/* User Menu */}
-        <Box sx={{ 
-          p: spacing.padding.small, 
-          borderTop: `1px solid ${colors.divider}`,
-          mt: 'auto'
-        }}>
-          <ListItemButton
-            onClick={handleUserMenuClick}
-            sx={{
-              borderRadius: 1,
-              '&:hover': {
-                bgcolor: colors.action.hover,
-              },
-            }}
-          >
-            <Avatar sx={{ 
-              width: 32, 
-              height: 32, 
-              bgcolor: colors.secondary.main,
-              mr: spacing.padding.small 
-            }}>
-              <PersonIcon fontSize="small" />
-            </Avatar>
+        <Box sx={{ mt: 'auto', p: 2 }}>
+          <ListItemButton onClick={handleUserMenuClick}>
+            <ListItemIcon sx={{ color: colors.primary.contrastText }}>
+              <Avatar sx={{ bgcolor: colors.secondary.main }}>
+                {user?.name?.charAt(0).toUpperCase() || 'U'}
+              </Avatar>
+            </ListItemIcon>
             <ListItemText 
-              primary="Super" 
-              secondary="Admin"
+              primary={user?.name || 'User'} 
               sx={{ 
                 '& .MuiListItemText-primary': { 
                   fontSize: typography.fontSize.small,
-                  color: colors.primary.contrastText
-                },
-                '& .MuiListItemText-secondary': {
-                  fontSize: typography.fontSize.small,
-                  color: colors.primary.contrastText,
-                  opacity: 0.7
-                }
+                  fontWeight: typography.fontWeight.medium
+                } 
               }}
             />
           </ListItemButton>
@@ -282,12 +242,14 @@ export const MainLayout = () => {
             </ListItemIcon>
             <ListItemText>Change Password</ListItemText>
           </MenuItem>
-          <MenuItem onClick={handleExportedReports}>
-            <ListItemIcon>
-              <DescriptionIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Exported Reports</ListItemText>
-          </MenuItem>
+          {isAdmin && (
+            <MenuItem onClick={handleExportedReports}>
+              <ListItemIcon>
+                <DescriptionIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Exported Reports</ListItemText>
+            </MenuItem>
+          )}
           <MenuItem onClick={handleLogout}>
             <ListItemIcon>
               <LogoutIcon fontSize="small" color="error" />

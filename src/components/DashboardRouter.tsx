@@ -1,7 +1,5 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { FacultyDashboard } from '../pages/FacultyDashboard';
-import { StudentDashboard } from '../pages/StudentDashboard';
 
 export const DashboardRouter = () => {
   const { user } = useAuth();
@@ -10,14 +8,14 @@ export const DashboardRouter = () => {
     return <Navigate to="/login" replace />;
   }
 
-  // Check user role and render appropriate dashboard
+  // Check user role and redirect to appropriate dashboard/page
   switch (user.role) {
     case 'admin':
       return <Navigate to="/students" replace />;
     case 'faculty':
-      return <FacultyDashboard />;
+      return <Navigate to="/faculty-dashboard" replace />;
     case 'student':
-      return <StudentDashboard />;
+      return <Navigate to="/student-dashboard" replace />;
     default:
       // If role is not set or invalid, redirect to login
       return <Navigate to="/login" replace />;

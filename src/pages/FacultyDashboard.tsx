@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import {
   Box,
+  Typography,
+  TextField,
   Button,
   Card,
   CardContent,
-  Typography,
-  TextField,
   Paper,
   Table,
   TableBody,
@@ -14,254 +14,267 @@ import {
   TableHead,
   TableRow,
   IconButton,
-  Divider,
-  Avatar,
-  Menu,
-  MenuItem,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
-import GroupIcon from '@mui/icons-material/Group';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useStudents } from '../hooks/useStudents';
 import { useAuth } from '../hooks/useAuth';
+import type { Student } from '../services/students';
 
 export const FacultyDashboard = () => {
   const { students, addStudent, editStudent, deleteStudent } = useStudents();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const [editMode, setEditMode] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    mobileNumber: ''
+  });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  // Student form state
-  const [editModeStudent, setEditModeStudent] = useState(false);
-  const [studentForm, setStudentForm] = useState({ id: '', firstName: '', lastName: '', mobileNumber: '' });
-  const [studentError, setStudentError] = useState('');
-
-  // Profile/Logout menu state
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const openMenu = Boolean(anchorEl);
-  
-  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
+  const validateField = (name: string, value: string): string => {
+    switch (name) {
+      case 'firstName':
+        return value.trim() ? '' : 'First Name is required';
+      case 'lastName':
+        return value.trim() ? '' : 'Last Name is required';
+      case 'mobileNumber':
+        return /^[6-9]\d{9}$/.test(value) ? '' : 'Please enter a valid 10-digit mobile number starting with 6-9';
+      default:
+        return '';
+    }
   };
 
-  const handleCloseMenu = () => {
-    setAnchorEl(null);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    const error = validateField(name, value);
+    setFieldErrors(prev => ({ ...prev, [name]: error }));
   };
 
-  const handleLogout = () => {
-    handleCloseMenu();
-    logout();
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    Object.keys(formData).forEach(key => {
+      const value = formData[key as keyof typeof formData];
+      const error = validateField(key, value);
+      if (error) {
+        errors[key] = error;
+      }
+    });
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
-  const handleChangeStudent = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setStudentForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) {
+      return;
+    }
+    try {
+      if (editMode && selectedStudent) {
+        await editStudent({
+          id: selectedStudent.id,
+          ...formData
+        });
+      } else {
+        await addStudent(formData);
+      }
+      setFormData({
+        firstName: '',
+        lastName: '',
+        mobileNumber: ''
+      });
+      setEditMode(false);
+      setSelectedStudent(null);
+      setFieldErrors({});
+    } catch (error) {
+      console.error('Error:', error);
+    }
   };
 
-  const handleEditStudent = (student: any) => {
-    setStudentForm({
-      id: student.id,
+  const handleEdit = (student: Student) => {
+    setEditMode(true);
+    setSelectedStudent(student);
+    setFormData({
       firstName: student.firstName,
       lastName: student.lastName,
       mobileNumber: student.mobileNumber
     });
-    setEditModeStudent(true);
-    setStudentError('');
+    setFieldErrors({});
   };
 
-  const handleSubmitStudent = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleDelete = async (id: string) => {
+    if (!id) {
+      console.error('Invalid student ID for deletion');
+      return;
+    }
+    setOpenDialog(false);
     try {
-      if (editModeStudent) {
-        await editStudent(studentForm);
-      } else {
-        await addStudent({
-          firstName: studentForm.firstName,
-          lastName: studentForm.lastName,
-          mobileNumber: studentForm.mobileNumber
-        });
-      }
-      setStudentForm({ id: '', firstName: '', lastName: '', mobileNumber: '' });
-      setEditModeStudent(false);
-    } catch (err: any) {
-      setStudentError(err?.response?.data?.error || 'Failed to save student.');
+      await deleteStudent(id);
+    } catch (error) {
+      console.error('Error deleting student:', error);
     }
   };
 
-  const handleDeleteStudent = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this student?')) {
-      try {
-        await deleteStudent(id);
-      } catch (err) {
-        setStudentError('Failed to delete student.');
-      }
-    }
-  };
-
-  // Get display name based on user type
-  const getDisplayName = () => {
-    if (!user) return 'N';
-    if (user.firstName && user.lastName) {
-      return `${user.firstName} ${user.lastName}`;
-    }
-    return user.name || 'N';
-  };
-
-  const getDisplayInitial = () => {
-    const displayName = getDisplayName();
-    return displayName.charAt(0).toUpperCase();
+  const confirmDelete = (student: Student) => {
+    setSelectedStudent(student);
+    setOpenDialog(true);
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f4f6fa' }}>
-      {/* Sidebar */}
-      <Box
-        sx={{
-          width: 280,
-          bgcolor: '#1a237e',
-          color: '#fff',
-          p: 2,
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold' }}>
-          School Management
+    <Box sx={{ p: 3 }}>
+      {/* Student Count Card */}
+      <Box sx={{ mb: 3, maxWidth: 300 }}>
+        <Card sx={{ bgcolor: '#3949ab', color: '#fff', borderRadius: 2 }}>
+          <CardContent>
+            <Typography variant="h5" fontWeight="bold">
+              {students?.length || 0}
+            </Typography>
+            <Typography variant="subtitle1">
+              Total Students
+            </Typography>
+          </CardContent>
+        </Card>
+      </Box>
+
+      {/* Add/Edit Student Form */}
+      <Paper sx={{ p: 3, mb: 4, borderRadius: 1 }} elevation={1}>
+        <Typography variant="h6" sx={{ mb: 3, fontWeight: 500 }}>
+          {editMode ? 'Edit Student' : 'Add Student'}
         </Typography>
-        <List sx={{ p: 0 }}>
-          <ListItem 
-            sx={{ 
-              bgcolor: '#283593',
-              py: 1.5,
-              '&:hover': {
-                cursor: 'pointer',
-                bgcolor: '#283593'
-              }
-            }}
-          >
-            <ListItemIcon>
-              <GroupIcon sx={{ color: '#fff' }} />
-            </ListItemIcon>
-            <ListItemText primary="Students" sx={{ '& .MuiListItemText-primary': { fontWeight: 'bold' } }} />
-          </ListItem>
-        </List>
-      </Box>
-
-      <Box sx={{ flex: 1, p: 4, position: 'relative' }}>
-        {/* Profile/Logout menu in top right */}
-        <Box sx={{ position: 'absolute', top: 24, right: 24 }}>
-          <IconButton onClick={handleMenu}>
-            <Avatar sx={{ bgcolor: '#3949ab' }}>{getDisplayInitial()}</Avatar>
-          </IconButton>
-          <Menu anchorEl={anchorEl} open={openMenu} onClose={handleCloseMenu}>
-            <MenuItem>
-              <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                {getDisplayName()}
-              </Typography>
-            </MenuItem>
-            <Divider />
-            <MenuItem onClick={handleCloseMenu}>Profile</MenuItem>
-            <MenuItem onClick={handleCloseMenu}>Change Password</MenuItem>
-            <MenuItem onClick={handleLogout}>Logout</MenuItem>
-          </Menu>
+        <Box component="form" onSubmit={handleSubmit}>
+          <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+            <TextField
+              name="firstName"
+              label="First Name"
+              value={formData.firstName}
+              onChange={handleInputChange}
+              required
+              fullWidth
+              size="small"
+              error={!!fieldErrors.firstName}
+              helperText={fieldErrors.firstName}
+              sx={{ flex: 1 }}
+            />
+            <TextField
+              name="lastName"
+              label="Last Name"
+              value={formData.lastName}
+              onChange={handleInputChange}
+              required
+              fullWidth
+              size="small"
+              error={!!fieldErrors.lastName}
+              helperText={fieldErrors.lastName}
+              sx={{ flex: 1 }}
+            />
+            <TextField
+              name="mobileNumber"
+              label="Mobile Number"
+              value={formData.mobileNumber}
+              onChange={handleInputChange}
+              required
+              fullWidth
+              size="small"
+              error={!!fieldErrors.mobileNumber}
+              helperText={fieldErrors.mobileNumber}
+              sx={{ flex: 1 }}
+            />
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              type="submit"
+              variant="contained"
+              sx={{
+                bgcolor: '#1976d2',
+                '&:hover': { bgcolor: '#1565c0' },
+                textTransform: 'uppercase'
+              }}
+            >
+              {editMode ? 'Save' : 'Add'}
+            </Button>
+            {editMode && (
+              <Button
+                onClick={() => {
+                  setEditMode(false);
+                  setSelectedStudent(null);
+                  setFormData({ firstName: '', lastName: '', mobileNumber: '' });
+                  setFieldErrors({});
+                }}
+                variant="outlined"
+                color="error"
+                sx={{ textTransform: 'uppercase' }}
+              >
+                Cancel
+              </Button>
+            )}
+          </Box>
         </Box>
+      </Paper>
 
-        {/* Main content */}
-        <Box sx={{ mb: 3, maxWidth: 300 }}>
-          <Card sx={{ bgcolor: '#3949ab', color: '#fff' }}>
-            <CardContent>
-              <Typography variant="h5" fontWeight="bold">
-                {students.length}
-              </Typography>
-              <Typography variant="subtitle1">Total Students</Typography>
-            </CardContent>
-          </Card>
-        </Box>
-        <Paper sx={{ p: 3, mb: 4 }} elevation={2}>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            {editModeStudent ? 'Edit Student' : 'Add Student'}
-          </Typography>
-          {studentError && (
-            <Typography color="error" sx={{ mb: 2 }}>{studentError}</Typography>
-          )}
-          <form onSubmit={handleSubmitStudent}>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-              <Box sx={{ flex: '1 1 calc(33% - 8px)', minWidth: 200 }}>
-                <TextField
-                  label="First Name"
-                  name="firstName"
-                  value={studentForm.firstName}
-                  onChange={handleChangeStudent}
-                  required
-                  fullWidth
-                />
-              </Box>
-              <Box sx={{ flex: '1 1 calc(33% - 8px)', minWidth: 200 }}>
-                <TextField
-                  label="Last Name"
-                  name="lastName"
-                  value={studentForm.lastName}
-                  onChange={handleChangeStudent}
-                  required
-                  fullWidth
-                />
-              </Box>
-              <Box sx={{ flex: '1 1 calc(33% - 8px)', minWidth: 200 }}>
-                <TextField
-                  label="Mobile Number"
-                  name="mobileNumber"
-                  value={studentForm.mobileNumber}
-                  onChange={handleChangeStudent}
-                  required
-                  fullWidth
-                />
-              </Box>
-              <Box sx={{ width: '100%', mt: 2 }}>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <Button type="submit" variant="contained" color="primary">
-                    {editModeStudent ? 'Save' : 'Add'}
-                  </Button>
-                  {editModeStudent && (
-                    <Button onClick={() => setEditModeStudent(false)} variant="outlined" color="secondary">
-                      Cancel
-                    </Button>
-                  )}
-                </Box>
-              </Box>
-            </Box>
-          </form>
-        </Paper>
-        <TableContainer component={Paper} elevation={2}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>First Name</TableCell>
-                <TableCell>Last Name</TableCell>
-                <TableCell>Mobile Number</TableCell>
-                <TableCell align="right">Actions</TableCell>
+      {/* Students Table */}
+      <Paper sx={{ borderRadius: 1 }} elevation={1}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 500 }}>Name</TableCell>
+              <TableCell sx={{ fontWeight: 500 }}>Mobile Number</TableCell>
+              <TableCell sx={{ fontWeight: 500 }}>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {students?.map((student: Student) => (
+              <TableRow key={student.id}>
+                <TableCell>{`${student.firstName} ${student.lastName}`}</TableCell>
+                <TableCell>{student.mobileNumber}</TableCell>
+                <TableCell>
+                  <IconButton 
+                    onClick={() => handleEdit(student)} 
+                    size="small"
+                    sx={{ color: '#1976d2' }}
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton 
+                    onClick={() => confirmDelete(student)} 
+                    size="small"
+                    sx={{ color: '#d32f2f' }}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </TableCell>
               </TableRow>
-            </TableHead>
-            <TableBody>
-              {students.map((student) => (
-                <TableRow key={student.id}>
-                  <TableCell>{student.firstName}</TableCell>
-                  <TableCell>{student.lastName}</TableCell>
-                  <TableCell>{student.mobileNumber}</TableCell>
-                  <TableCell align="right">
-                    <IconButton color="primary" onClick={() => handleEditStudent(student)}>
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton color="error" onClick={() => handleDeleteStudent(student.id ?? '')}>
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
+            ))}
+          </TableBody>
+        </Table>
+      </Paper>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          Are you sure you want to delete this student?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
+          <Button 
+            onClick={() => selectedStudent && handleDelete(selectedStudent.id || '')} 
+            color="error" 
+            variant="contained"
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }; 

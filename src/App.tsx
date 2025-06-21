@@ -9,8 +9,11 @@ import { Faculty } from './pages/Faculty';
 import { Students } from './pages/Students';
 import { Class } from './pages/Class';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { AdminRoute } from './components/AdminRoute';
 import { MainLayout } from './layouts/MainLayout';
 import { DashboardRouter } from './components/DashboardRouter';
+import { FacultyDashboard } from './pages/FacultyDashboard';
+import { StudentDashboard } from './pages/StudentDashboard';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 const queryClient = new QueryClient({
@@ -51,11 +54,17 @@ function App() {
                   {/* Dashboard Router for role-based navigation */}
                   <Route path="/" element={<DashboardRouter />} />
                   
+                  {/* Role-specific dashboards */}
+                  <Route path="/faculty-dashboard" element={<FacultyDashboard />} />
+                  <Route path="/student-dashboard" element={<StudentDashboard />} />
+                  
                   {/* Admin-only routes */}
-                  <Route path="/role" element={<Role />} />
-                  <Route path="/faculty" element={<Faculty />} />
-                  <Route path="/students" element={<Students />} />
-                  <Route path="/class" element={<Class />} />
+                  <Route element={<AdminRoute />}>
+                    <Route path="/role" element={<Role />} />
+                    <Route path="/faculty" element={<Faculty />} />
+                    <Route path="/students" element={<Students />} />
+                    <Route path="/class" element={<Class />} />
+                  </Route>
                 </Route>
               </Route>
 
