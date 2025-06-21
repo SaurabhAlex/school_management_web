@@ -1,12 +1,17 @@
 import api from './api';
-import type { Faculty } from './faculty';
+
+interface ClassTeacher {
+  id: string;
+  name: string;
+  employeeId: string;
+}
 
 export interface Class {
-  _id: string;  // Making _id required since it's always present in responses
+  id: string;
   name: string;
   section: string;
   academicYear: string;
-  classTeacher: Faculty;
+  classTeacher: ClassTeacher;
   capacity: number;
   description?: string;
 }
@@ -20,19 +25,20 @@ export interface CreateClassData {
   description?: string;
 }
 
-export interface UpdateClassData {
+export interface UpdateClassData extends CreateClassData {
   id: string;
-  name: string;
-  section: string;
-  academicYear: string;
-  classTeacher: string;
-  capacity: number;
-  description?: string;
 }
 
 export interface ClassResponse {
-  classes: Class[];
+  success: boolean;
   message?: string;
+  classes: Class[];
+}
+
+export interface SingleClassResponse {
+  success: boolean;
+  message: string;
+  class: Class;
 }
 
 export const classService = {
@@ -41,28 +47,24 @@ export const classService = {
     return response.data;
   },
 
-  async addClass(data: CreateClassData): Promise<Class> {
+  async addClass(data: CreateClassData): Promise<SingleClassResponse> {
     // Pad single digit numbers with leading zero
     const modifiedData = {
       ...data,
       name: /^[1-9]$/.test(data.name) ? `0${data.name}` : data.name
     };
-    const response = await api.post<Class>('/api/class/add', modifiedData);
+    const response = await api.post<SingleClassResponse>('/api/class/add', modifiedData);
     return response.data;
   },
 
-  async editClass(data: UpdateClassData): Promise<Class> {
-    // Pad single digit numbers with leading zero
-    const modifiedName = /^[1-9]$/.test(data.name) ? `0${data.name}` : data.name;
+  async editClass(data: UpdateClassData): Promise<SingleClassResponse> {
     const { id, ...updateData } = data;
-    const response = await api.put<Class>(`/api/class/edit/${id}`, {
-      name: modifiedName,
-      section: data.section,
-      academicYear: data.academicYear,
-      classTeacher: data.classTeacher,
-      capacity: data.capacity,
-      description: data.description
-    });
+    // Pad single digit numbers with leading zero
+    const modifiedData = {
+      ...updateData,
+      name: /^[1-9]$/.test(updateData.name) ? `0${updateData.name}` : updateData.name
+    };
+    const response = await api.put<SingleClassResponse>(`/api/class/edit/${id}`, modifiedData);
     return response.data;
   },
 

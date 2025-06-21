@@ -24,6 +24,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { useClass } from '../hooks/useClass';
 import { useFaculty } from '../hooks/useFaculty';
 import type { Class as ClassType } from '../services/class';
+import type { SelectChangeEvent } from '@mui/material';
 
 interface FormData {
   name: string;
@@ -85,44 +86,59 @@ export const Class = () => {
     }
   };
 
-  const validateForm = (): boolean => {
-    const errors: Record<string, string> = {};
-    let isValid = true;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+    const error = validateField(name, value);
+    setFieldErrors(prev => ({ ...prev, [name]: error }));
+  };
 
-    Object.keys(form).forEach((key) => {
+  const handleSelectChange = (e: SelectChangeEvent) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name as string]: value }));
+    const error = validateField(name as string, value);
+    setFieldErrors(prev => ({ ...prev, [name as string]: error }));
+  };
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    Object.keys(form).forEach(key => {
       if (key !== 'description') { // Description is optional
-        const error = validateField(key, form[key as keyof FormData]);
+        const value = form[key as keyof FormData];
+        const error = validateField(key, value);
         if (error) {
           errors[key] = error;
-          isValid = false;
         }
       }
     });
-
     setFieldErrors(errors);
-    return isValid;
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
+    
     if (!validateForm()) {
+      setError('Please fix all validation errors before submitting.');
       return;
     }
 
     try {
       const data = {
-        name: form.name.trim(),
-        section: form.section.trim(),
-        academicYear: form.academicYear.trim(),
+        name: form.name,
+        section: form.section,
+        academicYear: form.academicYear,
         classTeacher: form.classTeacher,
         capacity: parseInt(form.capacity),
-        description: form.description.trim(),
+        description: form.description || ''
       };
 
-      if (editMode && editingClassId) {
-        await editClass({ 
+      if (editMode) {
+        if (!editingClassId) {
+          throw new Error('Class ID is required for updates');
+        }
+        await editClass({
           id: editingClassId,
           ...data
         });
@@ -130,7 +146,17 @@ export const Class = () => {
         await addClass(data);
       }
       
-      resetForm();
+      setForm({
+        name: '',
+        section: '',
+        academicYear: '',
+        classTeacher: '',
+        capacity: '',
+        description: '',
+      });
+      setEditMode(false);
+      setEditingClassId('');
+      setFieldErrors({});
     } catch (err: any) {
       console.error('Error saving class:', err);
       setError(
@@ -144,38 +170,28 @@ export const Class = () => {
 
   const handleEdit = (classItem: ClassType) => {
     setForm({
-      name: classItem.name.replace(/^0/, ''), // Remove leading zero when editing
+      name: classItem.name,
       section: classItem.section,
       academicYear: classItem.academicYear,
-      classTeacher: classItem.classTeacher._id,
+      classTeacher: classItem.classTeacher.id,
       capacity: classItem.capacity.toString(),
       description: classItem.description || '',
     });
-    setEditingClassId(classItem._id);
+    setEditingClassId(classItem.id);
     setEditMode(true);
-    setError('');
-  };
-
-  const resetForm = () => {
-    setForm({
-      name: '',
-      section: '',
-      academicYear: '',
-      classTeacher: '',
-      capacity: '',
-      description: '',
-    });
-    setEditMode(false);
-    setEditingClassId('');
     setError('');
     setFieldErrors({});
   };
 
   const handleDelete = async (classItem: ClassType) => {
-    if (window.confirm(`Are you sure you want to delete class ${classItem.name.replace(/^0/, '')} ${classItem.section}?`)) {
+    if (!classItem.id) {
+      setError('Invalid class ID for deletion');
+      return;
+    }
+
+    if (window.confirm('Are you sure you want to delete this class?')) {
       try {
-        await deleteClass(classItem._id);
-        setError(''); // Clear any existing errors on success
+        await deleteClass(classItem.id);
       } catch (err: any) {
         console.error('Error deleting class:', err);
         setError(
@@ -188,27 +204,9 @@ export const Class = () => {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-    const error = validateField(name, value);
-    setFieldErrors(prev => ({ ...prev, [name]: error }));
-  };
-
-  const handleUppercaseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    const uppercaseValue = value.toUpperCase();
-    setForm(prev => ({ ...prev, [name]: uppercaseValue }));
-    const error = validateField(name, uppercaseValue);
-    setFieldErrors(prev => ({ ...prev, [name]: error }));
-  };
-
-  const handleSelectChange = (e: any) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-    const error = validateField(name, value);
-    setFieldErrors(prev => ({ ...prev, [name]: error }));
-  };
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <Box>
@@ -236,12 +234,11 @@ export const Class = () => {
                 label="Name"
                 name="name"
                 value={form.name}
-                onChange={handleUppercaseChange}
+                onChange={handleChange}
                 required
                 fullWidth
                 error={!!fieldErrors.name}
-                helperText={fieldErrors.name || 'Enter a number (1-12) or a letter (A-Z)'}
-                inputProps={{ maxLength: 2 }}
+                helperText={fieldErrors.name}
               />
             </Box>
             <Box sx={{ flex: '1 1 calc(33% - 8px)', minWidth: 200 }}>
@@ -249,12 +246,11 @@ export const Class = () => {
                 label="Section"
                 name="section"
                 value={form.section}
-                onChange={handleUppercaseChange}
+                onChange={handleChange}
                 required
                 fullWidth
                 error={!!fieldErrors.section}
-                helperText={fieldErrors.section || 'Enter a single letter (A-Z)'}
-                inputProps={{ maxLength: 1 }}
+                helperText={fieldErrors.section}
               />
             </Box>
             <Box sx={{ flex: '1 1 calc(33% - 8px)', minWidth: 200 }}>
@@ -321,7 +317,20 @@ export const Class = () => {
                   {editMode ? 'Save' : 'Add'}
                 </Button>
                 {editMode && (
-                  <Button onClick={resetForm} variant="outlined" color="secondary">
+                  <Button onClick={() => {
+                    setForm({
+                      name: '',
+                      section: '',
+                      academicYear: '',
+                      classTeacher: '',
+                      capacity: '',
+                      description: '',
+                    });
+                    setEditMode(false);
+                    setEditingClassId('');
+                    setError('');
+                    setFieldErrors({});
+                  }} variant="outlined" color="secondary">
                     Cancel
                   </Button>
                 )}
@@ -344,12 +353,12 @@ export const Class = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {classes.map((classItem) => (
-              <TableRow key={classItem._id}>
+            {Array.isArray(classes) && classes.map((classItem) => (
+              <TableRow key={classItem.id}>
                 <TableCell>{classItem.name.replace(/^0/, '')}</TableCell>
                 <TableCell>{classItem.section}</TableCell>
                 <TableCell>{classItem.academicYear}</TableCell>
-                <TableCell>{`${classItem.classTeacher.firstName} ${classItem.classTeacher.lastName}`}</TableCell>
+                <TableCell>{classItem.classTeacher.name}</TableCell>
                 <TableCell>{classItem.capacity}</TableCell>
                 <TableCell>{classItem.description}</TableCell>
                 <TableCell align="right">
