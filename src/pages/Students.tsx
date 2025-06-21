@@ -17,23 +17,39 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import { useStudents } from '../hooks/useStudents';
+import type { Student, CreateStudentData, UpdateStudentData } from '../services/students';
 
 export const Students = () => {
   const { students, isLoading, addStudent, editStudent, deleteStudent } = useStudents();
   const [openDialog, setOpenDialog] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [form, setForm] = useState({ id: '', name: '', email: '', age: '' });
+  const [form, setForm] = useState<Partial<Student>>({
+    id: '',
+    firstName: '',
+    lastName: '',
+    mobileNumber: ''
+  });
   const [error, setError] = useState('');
 
   const handleOpenAdd = () => {
-    setForm({ id: '', name: '', email: '', age: '' });
+    setForm({
+      id: '',
+      firstName: '',
+      lastName: '',
+      mobileNumber: ''
+    });
     setEditMode(false);
     setOpenDialog(true);
     setError('');
   };
 
-  const handleOpenEdit = (student: any) => {
-    setForm({ id: student.id, name: student.name, email: student.email, age: String(student.age) });
+  const handleOpenEdit = (student: Student) => {
+    setForm({
+      id: student.id,
+      firstName: student.firstName,
+      lastName: student.lastName,
+      mobileNumber: student.mobileNumber
+    });
     setEditMode(true);
     setOpenDialog(true);
     setError('');
@@ -50,10 +66,21 @@ export const Students = () => {
 
   const handleSubmit = async () => {
     try {
-      if (editMode) {
-        await editStudent({ id: form.id, name: form.name, email: form.email, age: Number(form.age) });
+      if (editMode && form.id) {
+        const updateData: UpdateStudentData = {
+          id: form.id,
+          firstName: form.firstName || '',
+          lastName: form.lastName || '',
+          mobileNumber: form.mobileNumber || ''
+        };
+        await editStudent(updateData);
       } else {
-        await addStudent({ name: form.name, email: form.email, age: Number(form.age) });
+        const createData: CreateStudentData = {
+          firstName: form.firstName || '',
+          lastName: form.lastName || '',
+          mobileNumber: form.mobileNumber || ''
+        };
+        await addStudent(createData);
       }
       setOpenDialog(false);
     } catch (err) {
@@ -84,29 +111,26 @@ export const Students = () => {
       )}
       <Grid container spacing={3}>
         {students.map((student) => (
-          <Grid item xs={12} sm={6} md={4} key={student.id} component="div">
+          <Box key={student.id} sx={{ width: { xs: '100%', sm: '50%', md: '33.33%' }, p: 1.5 }}>
             <Card sx={{ width: '100%', height: '100%' }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  {student.name}
+                  {student.firstName} {student.lastName}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Email: {student.email}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Age: {student.age}
+                  Mobile: {student.mobileNumber}
                 </Typography>
               </CardContent>
               <CardActions>
                 <IconButton size="small" onClick={() => handleOpenEdit(student)}>
                   <EditIcon />
                 </IconButton>
-                <IconButton size="small" onClick={() => handleDelete(student.id)}>
+                <IconButton size="small" onClick={() => handleDelete(student.id || '')}>
                   <DeleteIcon />
                 </IconButton>
               </CardActions>
             </Card>
-          </Grid>
+          </Box>
         ))}
       </Grid>
       <Dialog open={openDialog} onClose={handleClose}>
@@ -115,27 +139,26 @@ export const Students = () => {
           <TextField
             autoFocus
             margin="dense"
-            label="Name"
-            name="name"
+            label="First Name"
+            name="firstName"
             fullWidth
-            value={form.name}
+            value={form.firstName}
             onChange={handleChange}
           />
           <TextField
             margin="dense"
-            label="Email"
-            name="email"
+            label="Last Name"
+            name="lastName"
             fullWidth
-            value={form.email}
+            value={form.lastName}
             onChange={handleChange}
           />
           <TextField
             margin="dense"
-            label="Age"
-            name="age"
-            type="number"
+            label="Mobile Number"
+            name="mobileNumber"
             fullWidth
-            value={form.age}
+            value={form.mobileNumber}
             onChange={handleChange}
           />
         </DialogContent>

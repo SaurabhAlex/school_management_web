@@ -1,0 +1,84 @@
+name: Deploy to Amazon EC2
+
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  AWS_REGION: us-east-1        # Change this to your AWS region
+  EC2_INSTANCE_ID: ''         # You'll need to add your EC2 instance ID
+  EC2_USERNAME: ec2-user      # Change this based on your EC2 OS (ec2-user for Amazon Linux, ubuntu for Ubuntu)
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build application
+      run: npm run build
+      env:
+        CI: false # This prevents treating warnings as errors
+
+    - name: Install SSH key
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+    - name: Add EC2 to known hosts
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Deploy to EC2
+      run: |
+        # Create a temporary directory for deployment
+        ssh ${{ env.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "mkdir -p ~/app-temp"
+        
+        # Copy the build files to EC2
+        scp -r ./dist/* ${{ env.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:~/app-temp/
+        
+        # Deploy the new version
+        ssh ${{ env.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "
+          # Stop the existing PM2 process if it exists
+          pm2 stop frontend || true
+          
+          # Remove old files
+          rm -rf ~/app/*
+          
+          # Move new files
+          mkdir -p ~/app
+          mv ~/app-temp/* ~/app/
+          
+          # Clean up temp directory
+          rm -rf ~/app-temp
+          
+          # Start the application with PM2
+          cd ~/app && pm2 start npm --name frontend -- start
+          
+          # Save PM2 configuration
+          pm2 save
+        " 
