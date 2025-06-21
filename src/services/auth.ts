@@ -9,32 +9,36 @@ export interface RegisterData extends LoginCredentials {
   name: string;
 }
 
+export type UserRole = 'student' | 'faculty' | 'admin';
+
 export interface AuthResponse {
   token: string;
   user: {
     id: string;
     name: string;
     email: string;
-    role?: string;
+    role?: UserRole;
     firstName?: string;
     lastName?: string;
   };
 }
 
 export const authService = {
-  async login(credentials: LoginCredentials, role: 'student' | 'faculty' | 'admin' = 'student'): Promise<AuthResponse> {
-    let endpoint;
+  async login(credentials: LoginCredentials, role: UserRole): Promise<AuthResponse> {
+    let endpoint = '/auth/login'; // Default admin endpoint
+    
     switch (role) {
       case 'faculty':
         endpoint = '/auth/faculty/login';
         break;
-      case 'admin':
-        endpoint = '/auth/admin/login';
+      case 'student':
+        endpoint = '/auth/student/login';
         break;
-      default:
-        endpoint = '/auth/login';
+      case 'admin':
+        endpoint = '/auth/login'; // Admin uses the default login endpoint
+        break;
     }
-
+    
     const response = await api.post<AuthResponse>(endpoint, credentials);
     
     // Ensure role is set in the user object
