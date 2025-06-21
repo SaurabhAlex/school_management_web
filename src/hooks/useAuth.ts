@@ -48,7 +48,12 @@ export const useAuth = () => {
       setUser(response.user);
       // Ensure we have the user data before navigating
       if (response.user && response.user.role) {
-        navigate('/', { replace: true });
+        // Redirect admin users to students page, others to home
+        if (response.user.role === 'admin') {
+          navigate('/students', { replace: true });
+        } else {
+          navigate('/', { replace: true });
+        }
       } else {
         console.error('Login successful but user role not set');
         throw new Error('Login successful but role not set');

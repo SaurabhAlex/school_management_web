@@ -2,7 +2,6 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { FacultyDashboard } from '../pages/FacultyDashboard';
 import { StudentDashboard } from '../pages/StudentDashboard';
-import { AdminDashboard } from '../pages/AdminDashboard';
 
 export const DashboardRouter = () => {
   const { user } = useAuth();
@@ -14,7 +13,7 @@ export const DashboardRouter = () => {
   // Check user role and render appropriate dashboard
   switch (user.role) {
     case 'admin':
-      return <AdminDashboard />;
+      return <Navigate to="/students" replace />;
     case 'faculty':
       return <FacultyDashboard />;
     case 'student':
