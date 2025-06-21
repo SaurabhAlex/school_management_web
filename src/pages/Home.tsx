@@ -185,82 +185,82 @@ export const Home = () => {
           {/* Show additional navigation only for non-faculty users */}
           {!isFaculty && (
             <>
-              <ListItem 
+          <ListItem 
                 onClick={() => handleSectionChange('faculty')}
+            sx={{ 
+              bgcolor: section === 'faculty' ? '#283593' : 'transparent',
+              py: 1.5,
+              '&:hover': {
+                cursor: 'pointer',
+                bgcolor: section === 'faculty' ? '#283593' : 'rgba(255,255,255,0.1)'
+              }
+            }}
+          >
+            <ListItemIcon>
+              <SchoolIcon sx={{ color: '#fff' }} />
+            </ListItemIcon>
+            <ListItemText primary="Faculty" sx={{ '& .MuiListItemText-primary': { fontWeight: 'bold' } }} />
+          </ListItem>
+          <ListItem 
+            onClick={handleMastersClick}
+            sx={{ 
+              py: 1.5,
+              '&:hover': {
+                cursor: 'pointer',
+                bgcolor: 'rgba(255,255,255,0.1)'
+              }
+            }}
+          >
+            <ListItemIcon>
+              <SettingsIcon sx={{ color: '#fff' }} />
+            </ListItemIcon>
+            <ListItemText primary="Masters" sx={{ '& .MuiListItemText-primary': { fontWeight: 'bold' } }} />
+            {mastersOpen ? <ExpandLess /> : <ExpandMore />}
+          </ListItem>
+          <Collapse in={mastersOpen} timeout="auto" unmountOnExit>
+            <List component="div" disablePadding>
+              <ListItem 
+                onClick={() => {
+                      handleSectionChange('role');
+                  handleRoleClick();
+                }}
                 sx={{ 
-                  bgcolor: section === 'faculty' ? '#283593' : 'transparent',
+                  pl: 4,
                   py: 1.5,
+                  bgcolor: section === 'role' ? '#283593' : 'transparent',
                   '&:hover': {
                     cursor: 'pointer',
-                    bgcolor: section === 'faculty' ? '#283593' : 'rgba(255,255,255,0.1)'
+                    bgcolor: section === 'role' ? '#283593' : 'rgba(255,255,255,0.1)'
                   }
                 }}
               >
                 <ListItemIcon>
-                  <SchoolIcon sx={{ color: '#fff' }} />
+                  <WorkIcon sx={{ color: '#fff' }} />
                 </ListItemIcon>
-                <ListItemText primary="Faculty" sx={{ '& .MuiListItemText-primary': { fontWeight: 'bold' } }} />
+                <ListItemText primary="Role" sx={{ '& .MuiListItemText-primary': { fontWeight: 'bold' } }} />
               </ListItem>
               <ListItem 
-                onClick={handleMastersClick}
+                onClick={() => {
+                      handleSectionChange('class');
+                  handleClassClick();
+                }}
                 sx={{ 
+                  pl: 4,
                   py: 1.5,
+                  bgcolor: section === 'class' ? '#283593' : 'transparent',
                   '&:hover': {
                     cursor: 'pointer',
-                    bgcolor: 'rgba(255,255,255,0.1)'
+                    bgcolor: section === 'class' ? '#283593' : 'rgba(255,255,255,0.1)'
                   }
                 }}
               >
                 <ListItemIcon>
-                  <SettingsIcon sx={{ color: '#fff' }} />
+                  <ClassIcon sx={{ color: '#fff' }} />
                 </ListItemIcon>
-                <ListItemText primary="Masters" sx={{ '& .MuiListItemText-primary': { fontWeight: 'bold' } }} />
-                {mastersOpen ? <ExpandLess /> : <ExpandMore />}
+                <ListItemText primary="Class" sx={{ '& .MuiListItemText-primary': { fontWeight: 'bold' } }} />
               </ListItem>
-              <Collapse in={mastersOpen} timeout="auto" unmountOnExit>
-                <List component="div" disablePadding>
-                  <ListItem 
-                    onClick={() => {
-                      handleSectionChange('role');
-                      handleRoleClick();
-                    }}
-                    sx={{ 
-                      pl: 4,
-                      py: 1.5,
-                      bgcolor: section === 'role' ? '#283593' : 'transparent',
-                      '&:hover': {
-                        cursor: 'pointer',
-                        bgcolor: section === 'role' ? '#283593' : 'rgba(255,255,255,0.1)'
-                      }
-                    }}
-                  >
-                    <ListItemIcon>
-                      <WorkIcon sx={{ color: '#fff' }} />
-                    </ListItemIcon>
-                    <ListItemText primary="Role" sx={{ '& .MuiListItemText-primary': { fontWeight: 'bold' } }} />
-                  </ListItem>
-                  <ListItem 
-                    onClick={() => {
-                      handleSectionChange('class');
-                      handleClassClick();
-                    }}
-                    sx={{ 
-                      pl: 4,
-                      py: 1.5,
-                      bgcolor: section === 'class' ? '#283593' : 'transparent',
-                      '&:hover': {
-                        cursor: 'pointer',
-                        bgcolor: section === 'class' ? '#283593' : 'rgba(255,255,255,0.1)'
-                      }
-                    }}
-                  >
-                    <ListItemIcon>
-                      <ClassIcon sx={{ color: '#fff' }} />
-                    </ListItemIcon>
-                    <ListItemText primary="Class" sx={{ '& .MuiListItemText-primary': { fontWeight: 'bold' } }} />
-                  </ListItem>
-                </List>
-              </Collapse>
+            </List>
+          </Collapse>
             </>
           )}
         </List>
@@ -282,7 +282,7 @@ export const Home = () => {
             <Divider />
             <MenuItem onClick={handleCloseMenu}>Profile</MenuItem>
             {!isFaculty && (
-              <MenuItem onClick={handleCloseMenu}>Commission Structure</MenuItem>
+            <MenuItem onClick={handleCloseMenu}>Commission Structure</MenuItem>
             )}
             <MenuItem onClick={handleCloseMenu}>Change Password</MenuItem>
             <MenuItem onClick={handleLogout}>Logout</MenuItem>
@@ -379,9 +379,9 @@ export const Home = () => {
         {/* Show other sections only for non-faculty users */}
         {!isFaculty && (
           <>
-            {section === 'faculty' && <Faculty />}
-            {section === 'role' && <Role />}
-            {section === 'class' && <Class />}
+        {section === 'faculty' && <Faculty />}
+        {section === 'role' && <Role />}
+        {section === 'class' && <Class />}
           </>
         )}
       </Box>

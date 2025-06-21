@@ -2,96 +2,85 @@ import { useState } from 'react';
 import {
   Box,
   Button,
-  Card,
-  CardContent,
   Typography,
   TextField,
-  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  IconButton,
+  Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
 import { useRole } from '../hooks/useRole';
-import type { Role as RoleType } from '../services/role';
+import type { Role as RoleType, CreateRoleData, UpdateRoleData } from '../services/role';
 
 export const Role = () => {
   const { roles, isLoading, addRole, editRole, deleteRole } = useRole();
-  const [editMode, setEditMode] = useState(false);
-  const [form, setForm] = useState<Omit<RoleType, '_id'>>({
+  const [searchQuery, setSearchQuery] = useState('');
+  const [openDialog, setOpenDialog] = useState(false);
+  const [editingRole, setEditingRole] = useState<RoleType | null>(null);
+  const [form, setForm] = useState<CreateRoleData>({
     name: '',
-    description: '',
+    description: ''
   });
   const [error, setError] = useState('');
-  const [editingRoleId, setEditingRoleId] = useState('');
+  
+  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value);
+  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (!form.name.trim() || !form.description.trim()) {
-      setError('Name and description are required.');
-      return;
-    }
-
-    try {
-      if (editMode) {
-        await editRole({ 
-          id: editingRoleId, 
-          name: form.name.trim(), 
-          description: form.description.trim() 
-        });
-      } else {
-        await addRole({
-          name: form.name.trim(),
-          description: form.description.trim()
-        });
-      }
+  const handleOpenDialog = (role?: RoleType) => {
+    if (role) {
+      setEditingRole(role);
+      setForm({
+        name: role.name,
+        description: role.description
+      });
+    } else {
+      setEditingRole(null);
       setForm({
         name: '',
-        description: '',
+        description: ''
       });
-      setEditMode(false);
-      setEditingRoleId('');
-    } catch (err: any) {
-      console.error('Error saving role:', err);
-      setError(
-        err?.response?.data?.message || 
-        err?.response?.data?.error || 
-        err?.message || 
-        'Failed to save role.'
-      );
     }
+    setOpenDialog(true);
   };
 
-  const handleEdit = (roleItem: RoleType) => {
-    if (!roleItem._id) {
-      console.error('Role item:', roleItem);
-      setError('Role ID is missing from the role data');
-      return;
-    }
-    setForm({
-      name: roleItem.name,
-      description: roleItem.description,
-    });
-    setEditingRoleId(roleItem._id);
-    setEditMode(true);
-    setError('');
-  };
-
-  const handleCancel = () => {
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setEditingRole(null);
     setForm({
       name: '',
-      description: '',
+      description: ''
     });
-    setEditMode(false);
-    setEditingRoleId('');
     setError('');
+  };
+
+  const handleSubmit = async () => {
+    try {
+      if (editingRole?._id) {
+        await editRole({
+          id: editingRole._id,
+          name: form.name,
+          description: form.description
+        });
+      } else {
+        await addRole(form);
+      }
+      handleCloseDialog();
+    } catch (err: any) {
+      setError(err?.message || 'Failed to save role');
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
   };
 
   const handleDelete = async (id: string | undefined) => {
@@ -116,96 +105,171 @@ export const Role = () => {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-  };
+  const filteredRoles = roles.filter(role => 
+    role.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <Box>
-      <Box sx={{ mb: 3, maxWidth: 300 }}>
-        <Card sx={{ bgcolor: '#3949ab', color: '#fff' }}>
-          <CardContent>
-            <Typography variant="h5" fontWeight="bold">
-              {roles.length}
-            </Typography>
-            <Typography variant="subtitle1">Total Roles</Typography>
-          </CardContent>
-        </Card>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h5" sx={{ fontWeight: 500 }}>All Roles</Typography>
+        <Button 
+          variant="contained" 
+          onClick={() => handleOpenDialog()}
+          sx={{ 
+            bgcolor: '#1976d2',
+            textTransform: 'none',
+            '&:hover': {
+              bgcolor: '#1565c0'
+            }
+          }}
+        >
+          Add Role
+        </Button>
       </Box>
-      <Paper sx={{ p: 3, mb: 4 }} elevation={2}>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          {editMode ? 'Edit Role' : 'Add Role'}
-        </Typography>
-        {error && (
-          <Typography color="error" sx={{ mb: 2 }}>{error}</Typography>
-        )}
-        <form onSubmit={handleSubmit}>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-            <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: 200 }}>
-              <TextField
-                label="Name"
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                required
-                fullWidth
-              />
-            </Box>
-            <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: 200 }}>
-              <TextField
-                label="Description"
-                name="description"
-                value={form.description}
-                onChange={handleChange}
-                required
-                fullWidth
-                multiline
-                rows={2}
-              />
-            </Box>
-            <Box sx={{ width: '100%', mt: 2 }}>
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <Button type="submit" variant="contained" color="primary">
-                  {editMode ? 'Save' : 'Add'}
-                </Button>
-                {editMode && (
-                  <Button onClick={handleCancel} variant="outlined" color="secondary">
-                    Cancel
-                  </Button>
-                )}
-              </Box>
-            </Box>
-          </Box>
-        </form>
-      </Paper>
-      <TableContainer component={Paper} elevation={2}>
+
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          placeholder="Search by Role"
+          value={searchQuery}
+          onChange={handleSearch}
+          size="small"
+          sx={{ 
+            minWidth: 300,
+            bgcolor: 'white',
+            '& .MuiOutlinedInput-root': {
+              '& fieldset': {
+                borderColor: '#e0e0e0',
+              },
+              '&:hover fieldset': {
+                borderColor: '#1976d2',
+              },
+            },
+          }}
+        />
+      </Box>
+
+      <TableContainer component={Paper} elevation={0}>
         <Table>
           <TableHead>
-            <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>Description</TableCell>
-              <TableCell align="right">Actions</TableCell>
+            <TableRow sx={{ bgcolor: '#1a237e' }}>
+              <TableCell sx={{ color: 'white', fontWeight: 500 }}>S.N.</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 500 }}>Roles</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 500 }}>Description</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 500 }}>Action</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {roles.map((role) => (
-              <TableRow key={role._id}>
+            {filteredRoles.map((role, index) => (
+              <TableRow 
+                key={role._id}
+                sx={{ 
+                  '&:nth-of-type(odd)': { bgcolor: '#f5f5f5' },
+                  '&:hover': { bgcolor: '#f5f5f5' }
+                }}
+              >
+                <TableCell>{index + 1}</TableCell>
                 <TableCell>{role.name}</TableCell>
                 <TableCell>{role.description}</TableCell>
-                <TableCell align="right">
-                  <IconButton color="primary" onClick={() => handleEdit(role)}>
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton color="error" onClick={() => handleDelete(role._id)}>
-                    <DeleteIcon />
-                  </IconButton>
+                <TableCell>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => handleOpenDialog(role)}
+                      sx={{ 
+                        bgcolor: '#1a237e',
+                        textTransform: 'none',
+                        '&:hover': {
+                          bgcolor: '#0d47a1'
+                        }
+                      }}
+                    >
+                      Update
+                    </Button>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => handleDelete(role._id)}
+                      sx={{ 
+                        bgcolor: '#d32f2f',
+                        textTransform: 'none',
+                        '&:hover': {
+                          bgcolor: '#b71c1c'
+                        }
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </Box>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
+
+      <Dialog 
+        open={openDialog} 
+        onClose={handleCloseDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ borderBottom: 1, borderColor: 'divider', pb: 2 }}>
+          {editingRole ? 'Edit Role' : 'Add New Role'}
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          {error && (
+            <Typography color="error" sx={{ mb: 2 }}>{error}</Typography>
+          )}
+          <Box sx={{ mt: 1 }}>
+            <TextField
+              name="name"
+              label="Role Name"
+              value={form.name}
+              onChange={handleInputChange}
+              fullWidth
+              required
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              name="description"
+              label="Description"
+              value={form.description}
+              onChange={handleInputChange}
+              fullWidth
+              required
+              multiline
+              rows={3}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 1 }}>
+          <Button 
+            onClick={handleCloseDialog} 
+            sx={{ 
+              color: 'text.secondary',
+              textTransform: 'none'
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSubmit} 
+            variant="contained"
+            disabled={!form.name || !form.description}
+            sx={{ 
+              bgcolor: '#1a237e',
+              textTransform: 'none',
+              '&:hover': {
+                bgcolor: '#0d47a1'
+              }
+            }}
+          >
+            {editingRole ? 'Update' : 'Add'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }; 
