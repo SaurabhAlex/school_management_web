@@ -26,7 +26,12 @@
     "allowJs": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "types": ["vite/client", "node"],
+    "paths": {
+      "react-dom/*": ["./node_modules/@types/react-dom/*"]
+    }
   },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
 }
