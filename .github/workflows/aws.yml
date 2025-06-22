@@ -62,9 +62,9 @@ jobs:
         rm -f package-lock.json
         npm cache clean --force
         npm install
-        npm install -g typescript
-        npm install --save-dev @types/react @types/react-dom @types/node
-        npm install --save-dev vite @vitejs/plugin-react
+        npm install -D typescript @types/node @types/react @types/react-dom
+        npm install -D vite @vitejs/plugin-react
+        npm install -D @types/eslint @types/node
 
     - name: Type check
       run: npx tsc --noEmit
