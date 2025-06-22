@@ -13,8 +13,8 @@ import { AdminRoute } from './components/AdminRoute';
 import { MainLayout } from './layouts/MainLayout';
 import { DashboardRouter } from './components/DashboardRouter';
 import { FacultyDashboard } from './pages/FacultyDashboard';
-import { StudentDashboard } from './pages/StudentDashboard';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { NewStudentDashboard } from './pages/NewStudentDashboard';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,18 +45,19 @@ function App() {
           <CssBaseline />
           <Router>
             <Routes>
+              <Route path="/" element={<DashboardRouter />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               
               {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>
+                {/* Student Dashboard - Direct Route */}
+                <Route path="/new-student-dashboard" element={<NewStudentDashboard />} />
+                
+                {/* Admin and Faculty Routes with MainLayout */}
                 <Route element={<MainLayout />}>
-                  {/* Dashboard Router for role-based navigation */}
                   <Route path="/" element={<DashboardRouter />} />
-                  
-                  {/* Role-specific dashboards */}
                   <Route path="/faculty-dashboard" element={<FacultyDashboard />} />
-                  <Route path="/student-dashboard" element={<StudentDashboard />} />
                   
                   {/* Admin-only routes */}
                   <Route element={<AdminRoute />}>
