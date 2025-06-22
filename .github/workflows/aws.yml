@@ -28,6 +28,7 @@ env:
   AWS_REGION: us-east-1        # Default region, change if needed
   EC2_USERNAME: ubuntu         # Using Ubuntu as specified
   NODE_ENV: production
+  VITE_API_BASE_URL: ${{ secrets.BACKEND_URL }}
 
 permissions:
   contents: read
@@ -55,11 +56,15 @@ jobs:
         node-version: '18'
         cache: 'npm'
 
-    - name: Install dependencies
+    - name: Clean install dependencies
       run: |
-        npm ci
+        rm -rf node_modules
+        rm -f package-lock.json
+        npm cache clean --force
+        npm install
         npm install -g typescript
-        npm install --save-dev @types/react-dom
+        npm install --save-dev @types/react @types/react-dom @types/node
+        npm install --save-dev vite @vitejs/plugin-react
 
     - name: Type check
       run: npx tsc --noEmit
@@ -69,7 +74,7 @@ jobs:
         npm run build
       env:
         CI: false # Prevents treating warnings as errors
-        SKIP_PREFLIGHT_CHECK: true
+        VITE_API_BASE_URL: ${{ secrets.BACKEND_URL }}
 
     - name: Install SSH key
       uses: webfactory/ssh-agent@v0.8.0
@@ -100,51 +105,56 @@ jobs:
           pm2 stop frontend || true
           
           # Remove old files
-          rm -rf ~/app/*
+          sudo rm -rf /var/www/html/*
           
-          # Move new files
-          mkdir -p ~/app
-          mv ~/app-temp/* ~/app/
+          # Move new files to Nginx directory
+          sudo mv ~/app-temp/* /var/www/html/
           
           # Clean up temp directory
           rm -rf ~/app-temp
           
-          # Ensure Nginx is installed
+          # Ensure Nginx is installed and running
           if ! command -v nginx &> /dev/null; then
             sudo apt-get update
             sudo apt-get install -y nginx
           fi
           
-          # Configure Nginx
+          # Configure Nginx with proper headers and routing
           sudo tee /etc/nginx/sites-available/frontend << 'EOF'
           server {
               listen 80;
               server_name _;
-
-              root /home/ubuntu/app;
+              
+              root /var/www/html;
               index index.html;
-
+              
+              # Enable gzip compression
+              gzip on;
+              gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+              
               location / {
                   try_files \$uri \$uri/ /index.html;
+                  add_header Cache-Control "no-cache, no-store, must-revalidate";
               }
-
-              # Add security headers
-              add_header X-Frame-Options 'SAMEORIGIN';
-              add_header X-Content-Type-Options 'nosniff';
-              add_header X-XSS-Protection '1; mode=block';
+              
+              location /static {
+                  expires 1y;
+                  add_header Cache-Control "public, no-transform";
+              }
+              
+              # Security headers
+              add_header X-Frame-Options "SAMEORIGIN";
+              add_header X-XSS-Protection "1; mode=block";
+              add_header X-Content-Type-Options "nosniff";
+              add_header Referrer-Policy "strict-origin-when-cross-origin";
+              add_header Content-Security-Policy "default-src 'self' ${{ secrets.BACKEND_URL }}; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;";
           }
           EOF
           
-          # Enable the site
+          # Enable the site and remove default
           sudo ln -sf /etc/nginx/sites-available/frontend /etc/nginx/sites-enabled/
           sudo rm -f /etc/nginx/sites-enabled/default
           
           # Test and reload Nginx
           sudo nginx -t && sudo systemctl reload nginx
-          
-          # Start the application with PM2
-          cd ~/app && pm2 serve . 3000 --name frontend --spa
-          
-          # Save PM2 configuration
-          pm2 save
         "
