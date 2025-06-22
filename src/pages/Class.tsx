@@ -118,7 +118,7 @@ export const Class = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (!validateForm()) {
       setError('Please fix all validation errors before submitting.');
       return;
@@ -138,7 +138,7 @@ export const Class = () => {
         if (!editingClassId) {
           throw new Error('Class ID is required for updates');
         }
-        await editClass({
+        await editClass({ 
           id: editingClassId,
           ...data
         });

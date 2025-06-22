@@ -172,56 +172,56 @@ export const Students = () => {
         <Typography variant="h6" sx={{ mb: 2 }}>
           {editMode ? 'Edit Student' : 'Add Student'}
         </Typography>
-        {error && (
-          <Typography color="error" sx={{ mb: 2 }}>{error}</Typography>
-        )}
+      {error && (
+        <Typography color="error" sx={{ mb: 2 }}>{error}</Typography>
+      )}
         <form onSubmit={handleSubmit}>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
             <Box sx={{ flex: '1 1 calc(33% - 8px)', minWidth: 200 }}>
-              <TextField
+          <TextField
                 label="First Name"
                 name="firstName"
                 value={form.firstName}
                 onChange={handleChange}
                 required
-                fullWidth
+            fullWidth
                 error={!!fieldErrors.firstName}
                 helperText={fieldErrors.firstName}
-              />
+          />
             </Box>
             <Box sx={{ flex: '1 1 calc(33% - 8px)', minWidth: 200 }}>
-              <TextField
+          <TextField
                 label="Last Name"
                 name="lastName"
                 value={form.lastName}
                 onChange={handleChange}
                 required
-                fullWidth
+            fullWidth
                 error={!!fieldErrors.lastName}
                 helperText={fieldErrors.lastName}
-              />
+          />
             </Box>
             <Box sx={{ flex: '1 1 calc(33% - 8px)', minWidth: 200 }}>
-              <TextField
+          <TextField
                 label="Mobile Number"
                 name="mobileNumber"
                 value={form.mobileNumber}
                 onChange={handleChange}
                 required
-                fullWidth
+            fullWidth
                 error={!!fieldErrors.mobileNumber}
                 helperText={fieldErrors.mobileNumber}
                 inputProps={{ 
                   maxLength: 10,
                   pattern: '[6-9][0-9]{9}'
                 }}
-              />
+          />
             </Box>
             <Box sx={{ width: '100%', mt: 2 }}>
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <Button type="submit" variant="contained" color="primary">
-                  {editMode ? 'Save' : 'Add'}
-                </Button>
+            {editMode ? 'Save' : 'Add'}
+          </Button>
                 {editMode && (
                   <Button onClick={handleCancel} variant="outlined" color="secondary">
                     Cancel
