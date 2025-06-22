@@ -40,8 +40,8 @@ export const Role = () => {
       setForm({
         name: role.name,
         description: role.description
-      });
-    } else {
+        });
+      } else {
       setEditingRole(null);
       setForm({
         name: '',
@@ -129,7 +129,7 @@ export const Role = () => {
       </Box>
 
       <Box sx={{ mb: 3 }}>
-        <TextField
+              <TextField
           placeholder="Search by Role"
           value={searchQuery}
           onChange={handleSearch}
@@ -146,8 +146,8 @@ export const Role = () => {
               },
             },
           }}
-        />
-      </Box>
+              />
+            </Box>
 
       <TableContainer component={Paper} elevation={0}>
         <Table>

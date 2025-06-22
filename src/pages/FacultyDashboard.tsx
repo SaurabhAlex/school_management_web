@@ -44,9 +44,9 @@ export const FacultyDashboard = () => {
   const validateField = (name: string, value: string): string => {
     switch (name) {
       case 'firstName':
-        return value.trim() ? '' : 'First Name is required here!';
+        return value.trim() ? '' : 'First Name is required';
       case 'lastName':
-        return value.trim() ? '' : 'Last Name is required here!';
+        return value.trim() ? '' : 'Last Name is required';
       case 'mobileNumber':
         return /^[6-9]\d{9}$/.test(value) ? '' : 'Please enter a valid 10-digit mobile number starting with 6-9';
       default:
