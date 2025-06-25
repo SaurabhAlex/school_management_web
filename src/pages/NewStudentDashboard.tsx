@@ -92,7 +92,15 @@ export const NewStudentDashboard = () => {
 
   const handleChangePassword = () => {
     handleClose();
-    // Add change password navigation here
+    navigate('/change-password');
+  };
+
+  const getDisplayName = () => {
+    if (!user) return 'N';
+    if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    return user.email || 'N';
   };
 
   const upcomingClasses = [
@@ -197,7 +205,7 @@ export const NewStudentDashboard = () => {
                 bgcolor: '#242B51'
               }}
             >
-              {user.name?.charAt(0).toUpperCase()}
+              {getDisplayName().charAt(0).toUpperCase()}
             </Avatar>
           </Box>
           <Menu
@@ -226,7 +234,7 @@ export const NewStudentDashboard = () => {
           >
             <MenuItem>
               <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                {user.name}
+                {getDisplayName()}
               </Typography>
             </MenuItem>
             <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />

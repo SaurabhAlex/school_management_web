@@ -21,13 +21,32 @@
 name: Deploy to Amazon EC2
 
 on:
-  push:
-    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to deploy'
+        required: true
+        default: 'main'
+        type: choice
+        options:
+          - main
+          - UI-fix
+          - development
+          - staging
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+        default: 'development'
 
 env:
   AWS_REGION: us-east-1        # Default region, change if needed
   EC2_USERNAME: ubuntu         # Using Ubuntu as specified
-  NODE_ENV: production
+  NODE_ENV: ${{ github.event.inputs.environment }}
   VITE_API_BASE_URL: ${{ secrets.BACKEND_URL }}
 
 permissions:
@@ -37,11 +56,13 @@ jobs:
   deploy:
     name: Deploy to EC2
     runs-on: ubuntu-latest
-    environment: production
+    environment: ${{ github.event.inputs.environment }}
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.inputs.branch }}
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
@@ -74,28 +95,28 @@ jobs:
         npm run build
       env:
         CI: false # Prevents treating warnings as errors
-        VITE_API_BASE_URL: ${{ secrets.BACKEND_URL }}
+        VITE_API_BASE_URL: ${{ secrets[format('{0}_BACKEND_URL', github.event.inputs.environment)] }}
 
     - name: Install SSH key
       uses: webfactory/ssh-agent@v0.8.0
       with:
-        ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+        ssh-private-key: ${{ secrets[format('{0}_EC2_SSH_KEY', github.event.inputs.environment)] }}
 
     - name: Add EC2 to known hosts
       run: |
         mkdir -p ~/.ssh
-        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+        ssh-keyscan -H ${{ secrets[format('{0}_EC2_HOST', github.event.inputs.environment)] }} >> ~/.ssh/known_hosts
 
     - name: Deploy to EC2
       run: |
         # Create a temporary directory for deployment
-        ssh ${{ env.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "mkdir -p ~/app-temp"
+        ssh ${{ env.EC2_USERNAME }}@${{ secrets[format('{0}_EC2_HOST', github.event.inputs.environment)] }} "mkdir -p ~/app-temp"
         
         # Copy the build files to EC2
-        scp -r ./dist/* ${{ env.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:~/app-temp/
+        scp -r ./dist/* ${{ env.EC2_USERNAME }}@${{ secrets[format('{0}_EC2_HOST', github.event.inputs.environment)] }}:~/app-temp/
         
         # Deploy the new version
-        ssh ${{ env.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "
+        ssh ${{ env.EC2_USERNAME }}@${{ secrets[format('{0}_EC2_HOST', github.event.inputs.environment)] }} "
           # Install or update pm2 if not present
           if ! command -v pm2 &> /dev/null; then
             sudo npm install -g pm2
@@ -147,7 +168,7 @@ jobs:
               add_header X-XSS-Protection "1; mode=block";
               add_header X-Content-Type-Options "nosniff";
               add_header Referrer-Policy "strict-origin-when-cross-origin";
-              add_header Content-Security-Policy "default-src 'self' ${{ secrets.BACKEND_URL }}; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;";
+              add_header Content-Security-Policy "default-src 'self' ${{ secrets[format('{0}_BACKEND_URL', github.event.inputs.environment)] }}; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;";
           }
           EOF
           

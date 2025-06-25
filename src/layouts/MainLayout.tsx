@@ -201,11 +201,11 @@ export const MainLayout = () => {
           <ListItemButton onClick={handleUserMenuClick}>
             <ListItemIcon sx={{ color: colors.primary.contrastText }}>
               <Avatar sx={{ bgcolor: colors.secondary.main }}>
-                {user?.name?.charAt(0).toUpperCase() || 'U'}
+                {user?.firstName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
               </Avatar>
             </ListItemIcon>
             <ListItemText 
-              primary={user?.name || 'User'} 
+              primary={`${user?.firstName || ''} ${user?.lastName || ''}` || user?.email || 'User'} 
               sx={{ 
                 '& .MuiListItemText-primary': { 
                   fontSize: typography.fontSize.small,

@@ -48,15 +48,12 @@ export const StudentDashboard = () => {
   // Get display name based on user type
   const getDisplayName = () => {
     if (!user) return 'N';
-    if (user.firstName && user.lastName) {
-      return `${user.firstName} ${user.lastName}`;
-    }
-    return user.name || 'N';
+    return `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'N';
   };
 
   const getDisplayInitial = () => {
-    const displayName = getDisplayName();
-    return displayName.charAt(0).toUpperCase();
+    if (!user) return 'N';
+    return user.firstName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'N';
   };
 
   const tabs = [

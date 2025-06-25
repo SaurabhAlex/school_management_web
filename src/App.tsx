@@ -15,6 +15,7 @@ import { DashboardRouter } from './components/DashboardRouter';
 import { FacultyDashboard } from './pages/FacultyDashboard';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { NewStudentDashboard } from './pages/NewStudentDashboard';
+import { ChangePassword } from './pages/ChangePassword';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,6 +54,7 @@ function App() {
               <Route element={<ProtectedRoute />}>
                 {/* Student Dashboard - Direct Route */}
                 <Route path="/new-student-dashboard" element={<NewStudentDashboard />} />
+                <Route path="/change-password" element={<ChangePassword />} />
                 
                 {/* Admin and Faculty Routes with MainLayout */}
                 <Route element={<MainLayout />}>

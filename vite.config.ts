@@ -17,11 +17,25 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    minify: 'terser',
+    cssMinify: true,
+    reportCompressedSize: false,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
+      maxParallelFileOps: 2,
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          mui: ['@mui/material', '@mui/icons-material']
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('@mui/icons-material')) {
+              return 'mui-icons'
+            }
+            if (id.includes('@mui/material')) {
+              return 'mui-core'
+            }
+            if (id.includes('react')) {
+              return 'vendor'
+            }
+          }
         }
       }
     }
