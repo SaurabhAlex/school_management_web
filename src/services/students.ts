@@ -5,12 +5,14 @@ export interface Student {
   firstName: string;
   lastName: string;
   mobileNumber: string;
+  email: string;
 }
 
 export interface CreateStudentData {
   firstName: string;
   lastName: string;
   mobileNumber: string;
+  email: string;
 }
 
 export interface UpdateStudentData extends CreateStudentData {

@@ -39,17 +39,20 @@ export const useAuth = () => {
     checkAuth();
   }, []);
 
-  const login = async (email: string, password: string, role: UserRole = 'student') => {
+  const login = async (email: string, password: string, role: UserRole = 'admin') => {
     try {
       console.log('Attempting login with role:', role);
       const response = await authService.login({ email, password }, role);
       console.log('Login response:', response);
       setIsAuthenticated(true);
-      setUser(response.user);
+      
+      const userData = authService.getUser();
+      setUser(userData);
+      
       // Ensure we have the user data before navigating
-      if (response.user && response.user.role) {
+      if (userData && userData.role) {
         // Redirect admin users to students page, others to home
-        if (response.user.role === 'admin') {
+        if (userData.role === 'admin') {
           navigate('/students', { replace: true });
         } else {
           navigate('/', { replace: true });
@@ -68,7 +71,8 @@ export const useAuth = () => {
     try {
       const response = await authService.register({ name, email, password });
       setIsAuthenticated(true);
-      setUser(response.user);
+      const userData = authService.getUser();
+      setUser(userData);
       navigate('/');
     } catch (error) {
       console.error('Registration error:', error);
