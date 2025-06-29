@@ -15,7 +15,7 @@ export const DashboardRouter = () => {
     case 'faculty':
       return <Navigate to="/faculty-dashboard" replace />;
     case 'student':
-      return <Navigate to="/new-student-dashboard" replace />;
+      return <Navigate to="/student-dashboard" replace />;
     default:
       // If role is not set or invalid, redirect to login
       return <Navigate to="/login" replace />;

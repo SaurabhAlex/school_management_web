@@ -8,38 +8,39 @@ import {
   CircularProgress,
   Alert,
   Container,
-  Paper
+  Paper,
+  Card,
+  CardContent
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useAuth } from '../hooks/useAuth';
 import api from '../services/api';
+import { colors } from '../utils/theme';
 
-const StyledPaper = styled(Paper)({
-  backgroundColor: '#1A1F37',
-  color: '#fff',
+const StyledCard = styled(Card)({
+  backgroundColor: '#ffffff',
   borderRadius: '12px',
-  padding: '32px',
+  boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
   width: '100%',
   maxWidth: '500px'
 });
 
 const StyledTextField = styled(TextField)({
   '& .MuiOutlinedInput-root': {
-    color: '#fff',
     '& fieldset': {
-      borderColor: 'rgba(255, 255, 255, 0.23)',
+      borderColor: 'rgba(0, 0, 0, 0.23)',
     },
     '&:hover fieldset': {
-      borderColor: 'rgba(255, 255, 255, 0.4)',
+      borderColor: colors.primary.main,
     },
     '&.Mui-focused fieldset': {
-      borderColor: '#3949ab',
+      borderColor: colors.primary.main,
     },
   },
   '& .MuiInputLabel-root': {
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: 'rgba(0, 0, 0, 0.7)',
     '&.Mui-focused': {
-      color: '#3949ab',
+      color: colors.primary.main,
     },
   },
   '& .MuiFormHelperText-root': {
@@ -48,18 +49,18 @@ const StyledTextField = styled(TextField)({
 });
 
 const SubmitButton = styled(Button)({
-  backgroundColor: '#3949ab',
-  color: '#fff',
+  backgroundColor: colors.primary.main,
+  color: colors.primary.contrastText,
   padding: '10px 24px',
   borderRadius: '8px',
   textTransform: 'none',
   fontSize: '16px',
   fontWeight: 500,
   '&:hover': {
-    backgroundColor: '#2f3660',
+    backgroundColor: colors.primary.dark,
   },
   '&.Mui-disabled': {
-    backgroundColor: 'rgba(57, 73, 171, 0.5)',
+    backgroundColor: `${colors.primary.main}80`,
     color: 'rgba(255, 255, 255, 0.5)',
   },
 });
@@ -140,7 +141,11 @@ export const ChangePassword = () => {
 
     setIsLoading(true);
     try {
-      const response = await api.post('/api/auth/change-password', {
+      const endpoint = user.role === 'faculty' 
+        ? '/api/auth/faculty/change-password'
+        : '/api/auth/change-password';
+
+      const response = await api.post(endpoint, {
         currentPassword: formData.currentPassword,
         newPassword: formData.newPassword
       });
@@ -162,76 +167,102 @@ export const ChangePassword = () => {
 
   return (
     <Box sx={{
-      minHeight: '100vh',
-      backgroundColor: '#111422',
+      minHeight: 'calc(100vh - 64px)', // Adjust for header height
+      backgroundColor: colors.background.default,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       py: 4
     }}>
       <Container maxWidth="sm">
-        <StyledPaper elevation={0}>
-          <Typography variant="h5" sx={{ mb: 3, fontWeight: 600, textAlign: 'center' }}>
-            Change Password
-          </Typography>
+        <StyledCard>
+          <CardContent sx={{ p: 4 }}>
+            <Typography 
+              variant="h5" 
+              sx={{ 
+                mb: 3, 
+                fontWeight: 600, 
+                textAlign: 'center',
+                color: colors.primary.main
+              }}
+            >
+              Change Password
+            </Typography>
 
-          {apiError && (
-            <Alert severity="error" sx={{ mb: 3, backgroundColor: 'rgba(244, 67, 54, 0.1)', color: '#f44336' }}>
-              {apiError}
-            </Alert>
-          )}
+            {apiError && (
+              <Alert 
+                severity="error" 
+                sx={{ 
+                  mb: 3, 
+                  backgroundColor: 'rgba(244, 67, 54, 0.1)', 
+                  color: '#f44336' 
+                }}
+              >
+                {apiError}
+              </Alert>
+            )}
 
-          {successMessage && (
-            <Alert severity="success" sx={{ mb: 3, backgroundColor: 'rgba(76, 175, 80, 0.1)', color: '#4caf50' }}>
-              {successMessage}
-            </Alert>
-          )}
+            {successMessage && (
+              <Alert 
+                severity="success" 
+                sx={{ 
+                  mb: 3, 
+                  backgroundColor: 'rgba(76, 175, 80, 0.1)', 
+                  color: '#4caf50' 
+                }}
+              >
+                {successMessage}
+              </Alert>
+            )}
 
-          <form onSubmit={handleSubmit}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-              <StyledTextField
-                label="Current Password"
-                type="password"
-                value={formData.currentPassword}
-                onChange={handleChange('currentPassword')}
-                error={!!errors.currentPassword}
-                helperText={errors.currentPassword}
-                fullWidth
-              />
+            <form onSubmit={handleSubmit}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                <StyledTextField
+                  label="Current Password"
+                  type="password"
+                  value={formData.currentPassword}
+                  onChange={handleChange('currentPassword')}
+                  error={!!errors.currentPassword}
+                  helperText={errors.currentPassword}
+                  fullWidth
+                />
 
-              <StyledTextField
-                label="New Password"
-                type="password"
-                value={formData.newPassword}
-                onChange={handleChange('newPassword')}
-                error={!!errors.newPassword}
-                helperText={errors.newPassword}
-                fullWidth
-              />
+                <StyledTextField
+                  label="New Password"
+                  type="password"
+                  value={formData.newPassword}
+                  onChange={handleChange('newPassword')}
+                  error={!!errors.newPassword}
+                  helperText={errors.newPassword}
+                  fullWidth
+                />
 
-              <StyledTextField
-                label="Confirm New Password"
-                type="password"
-                value={formData.confirmPassword}
-                onChange={handleChange('confirmPassword')}
-                error={!!errors.confirmPassword}
-                helperText={errors.confirmPassword}
-                fullWidth
-              />
+                <StyledTextField
+                  label="Confirm New Password"
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange('confirmPassword')}
+                  error={!!errors.confirmPassword}
+                  helperText={errors.confirmPassword}
+                  fullWidth
+                />
 
-              <Box sx={{ mt: 2 }}>
                 <SubmitButton
                   type="submit"
-                  fullWidth
                   disabled={isLoading}
-                  startIcon={isLoading && <CircularProgress size={20} color="inherit" />}
+                  fullWidth
+                  sx={{ mt: 2 }}
                 >
-                  {isLoading ? 'Changing Password...' : 'Change Password'}
+                  {isLoading ? (
+                    <CircularProgress size={24} color="inherit" />
+                  ) : (
+                    'Change Password'
+                  )}
                 </SubmitButton>
               </Box>
-            </Box>
-          </form>
-        </StyledPaper>
+            </form>
+          </CardContent>
+        </StyledCard>
       </Container>
     </Box>
   );
