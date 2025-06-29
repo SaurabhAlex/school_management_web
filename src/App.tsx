@@ -14,8 +14,12 @@ import { MainLayout } from './layouts/MainLayout';
 import { DashboardRouter } from './components/DashboardRouter';
 import { FacultyDashboard } from './pages/FacultyDashboard';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { NewStudentDashboard } from './pages/NewStudentDashboard';
+import { StudentDashboard } from './pages/StudentDashboard';
 import { ChangePassword } from './pages/ChangePassword';
+import { Profile } from './pages/Profile';
+import { Attendance } from './components/Attendance';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,38 +47,42 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider theme={theme}>
-          <CssBaseline />
-          <Router>
-            <Routes>
-              <Route path="/" element={<DashboardRouter />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              
-              {/* Protected Routes */}
-              <Route element={<ProtectedRoute />}>
-                {/* Student Dashboard - Direct Route */}
-                <Route path="/new-student-dashboard" element={<NewStudentDashboard />} />
-                <Route path="/change-password" element={<ChangePassword />} />
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <CssBaseline />
+            <Router>
+              <Routes>
+                <Route path="/" element={<DashboardRouter />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
                 
-                {/* Admin and Faculty Routes with MainLayout */}
-                <Route element={<MainLayout />}>
-                  <Route path="/" element={<DashboardRouter />} />
-                  <Route path="/faculty-dashboard" element={<FacultyDashboard />} />
+                {/* Protected Routes */}
+                <Route element={<ProtectedRoute />}>
+                  {/* Student Dashboard - Direct Route */}
+                  <Route path="/student-dashboard" element={<StudentDashboard />} />
+                  <Route path="/change-password" element={<ChangePassword />} />
+                  <Route path="/profile" element={<Profile />} />
                   
-                  {/* Admin-only routes */}
-                  <Route element={<AdminRoute />}>
-                    <Route path="/role" element={<Role />} />
-                    <Route path="/faculty" element={<Faculty />} />
-                    <Route path="/students" element={<Students />} />
-                    <Route path="/class" element={<Class />} />
+                  {/* Admin and Faculty Routes with MainLayout */}
+                  <Route element={<MainLayout />}>
+                    <Route path="/" element={<DashboardRouter />} />
+                    <Route path="/faculty-dashboard" element={<FacultyDashboard />} />
+                    <Route path="/attendance" element={<Attendance />} />
+                    
+                    {/* Admin-only routes */}
+                    <Route element={<AdminRoute />}>
+                      <Route path="/role" element={<Role />} />
+                      <Route path="/faculty" element={<Faculty />} />
+                      <Route path="/students" element={<Students />} />
+                      <Route path="/class" element={<Class />} />
+                    </Route>
                   </Route>
                 </Route>
-              </Route>
 
-              {/* Catch-all redirect to dashboard */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Router>
+                {/* Catch-all redirect to dashboard */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Router>
+          </LocalizationProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>

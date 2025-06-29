@@ -26,12 +26,20 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import DescriptionIcon from '@mui/icons-material/Description';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
+import EventNoteIcon from '@mui/icons-material/EventNote';
 import { colors, spacing, typography } from '../utils/theme';
 import { useAuth } from '../hooks/useAuth';
 
-const mainItems = [
+const adminItems = [
   { text: 'Students', icon: <PeopleIcon />, path: '/students' },
-  { text: 'Faculty', icon: <SchoolIcon />, path: '/faculty' }
+  { text: 'Faculty', icon: <SchoolIcon />, path: '/faculty' },
+  { text: 'Attendance', icon: <EventNoteIcon />, path: '/attendance' }
+];
+
+const facultyItems = [
+  { text: 'My Students', icon: <PeopleIcon />, path: '/students' },
+  { text: 'Take Attendance', icon: <EventNoteIcon />, path: '/attendance' },
+  { text: 'My Classes', icon: <ClassIcon />, path: '/faculty-classes' }
 ];
 
 const masterItems = [
@@ -160,8 +168,8 @@ export const MainLayout = () => {
             </>
           )}
 
-          {/* Show only Students for faculty, show all main items for admin */}
-          {(isAdmin ? mainItems : mainItems.slice(0, 1)).map((item) => (
+          {/* Show different items based on user role */}
+          {(isAdmin ? adminItems : facultyItems).map((item) => (
             <ListItem key={item.text} disablePadding>
               <ListItemButton
                 onClick={() => navigate(item.path)}
