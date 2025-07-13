@@ -9,9 +9,15 @@ export interface Attendance {
 }
 
 export const attendanceService = {
-  // Get attendance for a specific date or date range
+  // Get attendance for a specific date
   getAttendance: async (date: string) => {
     const response = await api.get(`/attendance?date=${date}`);
+    return response.data;
+  },
+
+  // Get attendance for a date range
+  getAttendanceRange: async (startDate: string, endDate: string) => {
+    const response = await api.get(`/attendance/range?startDate=${startDate}&endDate=${endDate}`);
     return response.data;
   },
 

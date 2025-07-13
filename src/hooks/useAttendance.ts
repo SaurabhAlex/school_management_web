@@ -19,13 +19,27 @@ export const useAttendance = () => {
     }
   }, [showNotification]);
 
+  const fetchAttendanceRange = useCallback(async (startDate: string, endDate: string) => {
+    try {
+      setLoading(true);
+      const data = await attendanceService.getAttendanceRange(startDate, endDate);
+      setAttendanceData(data);
+    } catch (error) {
+      showNotification('Error fetching attendance data', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showNotification]);
+
   const markAttendance = useCallback(async (attendanceData: Omit<Attendance, 'id'>) => {
     try {
       setLoading(true);
       await attendanceService.markAttendance(attendanceData);
       showNotification('Attendance marked successfully', 'success');
-      // Refresh attendance data
-      await fetchAttendance(attendanceData.date);
+      // Refresh attendance data for the date
+      if (attendanceData.date) {
+        await fetchAttendance(attendanceData.date);
+      }
     } catch (error) {
       showNotification('Error marking attendance', 'error');
     } finally {
@@ -53,6 +67,7 @@ export const useAttendance = () => {
     loading,
     attendanceData,
     fetchAttendance,
+    fetchAttendanceRange,
     markAttendance,
     updateAttendance
   };
