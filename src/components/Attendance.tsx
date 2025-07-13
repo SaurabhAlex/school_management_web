@@ -11,42 +11,96 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Button,
   Select,
   MenuItem,
-  TextField,
   Box,
   Typography,
   FormControl,
-  InputLabel
+  Grid,
+  Alert
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { format } from 'date-fns';
+import { format, eachDayOfInterval, addDays, isSunday, differenceInDays } from 'date-fns';
 
 export const Attendance: React.FC = () => {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const { loading, attendanceData, fetchAttendance, markAttendance } = useAttendance();
+  const [startDate, setStartDate] = useState<Date>(new Date());
+  const [endDate, setEndDate] = useState<Date>(addDays(new Date(), 6));
+  const [error, setError] = useState<string>('');
+  const { loading, attendanceData, fetchAttendanceRange, markAttendance } = useAttendance();
   const { students, isLoading: studentsLoading } = useStudents();
 
-  useEffect(() => {
-    if (selectedDate) {
-      fetchAttendance(format(selectedDate, 'yyyy-MM-dd'));
+  const handleStartDateChange = (newValue: Date | null) => {
+    if (newValue) {
+      if (isSunday(newValue)) {
+        setError('Cannot select Sunday as start date');
+        return;
+      }
+      setError('');
+      setStartDate(newValue);
+      
+      // Adjust end date if needed
+      const daysDiff = differenceInDays(endDate, newValue);
+      if (daysDiff > 6) {
+        setEndDate(addDays(newValue, 6));
+      } else if (daysDiff < 0) {
+        setEndDate(addDays(newValue, 6));
+      }
     }
-  }, [selectedDate, fetchAttendance]);
+  };
 
-  const handleAttendanceChange = async (studentId: string, status: 'present' | 'absent') => {
+  const handleEndDateChange = (newValue: Date | null) => {
+    if (newValue) {
+      if (isSunday(newValue)) {
+        setError('Cannot select Sunday as end date');
+        return;
+      }
+
+      const daysDiff = differenceInDays(newValue, startDate);
+      if (daysDiff > 6) {
+        setError('Date range cannot exceed 7 days');
+        return;
+      } else if (daysDiff < 0) {
+        setError('End date must be after start date');
+        return;
+      }
+
+      setError('');
+      setEndDate(newValue);
+    }
+  };
+
+  useEffect(() => {
+    if (startDate && endDate) {
+      fetchAttendanceRange(
+        format(startDate, 'yyyy-MM-dd'),
+        format(endDate, 'yyyy-MM-dd')
+      );
+    }
+  }, [startDate, endDate, fetchAttendanceRange]);
+
+  const handleAttendanceChange = async (studentId: string, date: Date, status: 'present' | 'absent') => {
     await markAttendance({
       studentId,
-      date: format(selectedDate, 'yyyy-MM-dd'),
+      date: format(date, 'yyyy-MM-dd'),
       status,
     });
+  };
+
+  const getAttendanceForDate = (studentId: string, date: string) => {
+    return attendanceData.find(
+      (a) => a.studentId === studentId && a.date === date
+    );
   };
 
   if (loading || studentsLoading) {
     return <LoadingSpinner />;
   }
+
+  // Get array of dates between start and end date
+  const dateRange = eachDayOfInterval({ start: startDate, end: endDate })
+    .filter(date => !isSunday(date)); // Filter out Sundays
 
   return (
     <Box sx={{ p: 3 }}>
@@ -54,15 +108,59 @@ export const Attendance: React.FC = () => {
         Attendance Management
       </Typography>
 
-      <Box sx={{ mb: 3 }}>
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <DatePicker
-            label="Select Date"
-            value={selectedDate}
-            onChange={(newValue: Date | null) => newValue && setSelectedDate(newValue)}
-          />
-        </LocalizationProvider>
-      </Box>
+      <Grid 
+        container 
+        spacing={2} 
+        sx={{ 
+          mb: 3,
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <Grid item xs={12} sm={5}>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <DatePicker
+              label="Start Date"
+              value={startDate}
+              onChange={handleStartDateChange}
+              sx={{ width: '100%' }}
+              shouldDisableDate={isSunday}
+            />
+          </LocalizationProvider>
+        </Grid>
+        <Grid 
+          item 
+          xs={12} 
+          sm={2} 
+          sx={{ 
+            display: 'flex', 
+            justifyContent: 'center',
+            typography: 'body1',
+            fontWeight: 'medium'
+          }}
+        >
+          to
+        </Grid>
+        <Grid item xs={12} sm={5}>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <DatePicker
+              label="End Date"
+              value={endDate}
+              onChange={handleEndDateChange}
+              minDate={startDate}
+              maxDate={addDays(startDate, 6)}
+              sx={{ width: '100%' }}
+              shouldDisableDate={isSunday}
+            />
+          </LocalizationProvider>
+        </Grid>
+      </Grid>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
       <TableContainer component={Paper}>
         <Table>
@@ -70,46 +168,47 @@ export const Attendance: React.FC = () => {
             <TableRow>
               <TableCell>Student Name</TableCell>
               <TableCell>Email</TableCell>
-              <TableCell>Mobile Number</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Actions</TableCell>
+              {dateRange.map((date) => (
+                <TableCell key={date.toISOString()} align="center">
+                  {format(date, 'dd MMM')}
+                </TableCell>
+              ))}
             </TableRow>
           </TableHead>
           <TableBody>
-            {students.map((student) => {
-              const studentAttendance = attendanceData.find(
-                (a) => a.studentId === student.id
-              );
-
-              return (
-                <TableRow key={student.id}>
-                  <TableCell>{`${student.firstName} ${student.lastName}`}</TableCell>
-                  <TableCell>{student.email}</TableCell>
-                  <TableCell>{student.mobileNumber}</TableCell>
-                  <TableCell>
-                    {studentAttendance?.status || 'Not marked'}
-                  </TableCell>
-                  <TableCell>
-                    <FormControl size="small" sx={{ minWidth: 120 }}>
-                      <InputLabel>Mark Attendance</InputLabel>
-                      <Select
-                        value={studentAttendance?.status || ''}
-                        label="Mark Attendance"
-                        onChange={(e) =>
-                          handleAttendanceChange(
-                            student.id!,
-                            e.target.value as 'present' | 'absent'
-                          )
-                        }
-                      >
-                        <MenuItem value="present">Present</MenuItem>
-                        <MenuItem value="absent">Absent</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {students.map((student) => (
+              <TableRow key={student.id}>
+                <TableCell>{`${student.firstName} ${student.lastName}`}</TableCell>
+                <TableCell>{student.email}</TableCell>
+                {dateRange.map((date) => {
+                  const attendance = getAttendanceForDate(
+                    student.id!,
+                    format(date, 'yyyy-MM-dd')
+                  );
+                  return (
+                    <TableCell key={date.toISOString()} align="center">
+                      <FormControl size="small" sx={{ minWidth: 100 }}>
+                        <Select
+                          value={attendance?.status || ''}
+                          onChange={(e) =>
+                            handleAttendanceChange(
+                              student.id!,
+                              date,
+                              e.target.value as 'present' | 'absent'
+                            )
+                          }
+                          displayEmpty
+                        >
+                          <MenuItem value="">Not marked</MenuItem>
+                          <MenuItem value="present">Present</MenuItem>
+                          <MenuItem value="absent">Absent</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </TableCell>
+                  );
+                })}
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </TableContainer>
