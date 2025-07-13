@@ -67,7 +67,7 @@ export const Home = () => {
 
   // Student form state
   const [editModeStudent, setEditModeStudent] = useState(false);
-  const [studentForm, setStudentForm] = useState({ id: '', firstName: '', lastName: '', mobileNumber: '' });
+  const [studentForm, setStudentForm] = useState({ id: '', firstName: '', lastName: '', mobileNumber: '', email: '' });
   const [studentError, setStudentError] = useState('');
 
   // Profile/Logout menu state
@@ -87,10 +87,7 @@ export const Home = () => {
   // Get display name based on user type
   const getDisplayName = () => {
     if (!user) return 'N';
-    if (user.firstName && user.lastName) {
-      return `${user.firstName} ${user.lastName}`;
-    }
-    return user.name || 'N';
+    return `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'N';
   };
 
   const getDisplayInitial = () => {
@@ -112,12 +109,12 @@ export const Home = () => {
 
   // Handlers for Students
   const handleEditStudent = (student: any) => {
-    setStudentForm({ id: student.id, firstName: student.firstName, lastName: student.lastName, mobileNumber: student.mobileNumber });
+    setStudentForm({ id: student.id, firstName: student.firstName, lastName: student.lastName, mobileNumber: student.mobileNumber, email: student.email });
     setEditModeStudent(true);
     setStudentError('');
   };
   const handleCancelStudent = () => {
-    setStudentForm({ id: '', firstName: '', lastName: '', mobileNumber: '' });
+    setStudentForm({ id: '', firstName: '', lastName: '', mobileNumber: '', email: '' });
     setEditModeStudent(false);
     setStudentError('');
   };
@@ -128,11 +125,22 @@ export const Home = () => {
     e.preventDefault();
     try {
       if (editModeStudent) {
-        await editStudent({ id: studentForm.id, firstName: studentForm.firstName, lastName: studentForm.lastName, mobileNumber: studentForm.mobileNumber });
+        await editStudent({ 
+          id: studentForm.id, 
+          firstName: studentForm.firstName, 
+          lastName: studentForm.lastName, 
+          mobileNumber: studentForm.mobileNumber,
+          email: studentForm.email 
+        });
       } else {
-        await addStudent({ firstName: studentForm.firstName, lastName: studentForm.lastName, mobileNumber: studentForm.mobileNumber });
+        await addStudent({ 
+          firstName: studentForm.firstName, 
+          lastName: studentForm.lastName, 
+          mobileNumber: studentForm.mobileNumber,
+          email: studentForm.email 
+        });
       }
-      setStudentForm({ id: '', firstName: '', lastName: '', mobileNumber: '' });
+      setStudentForm({ id: '', firstName: '', lastName: '', mobileNumber: '', email: '' });
       setEditModeStudent(false);
     } catch (err: any) {
       setStudentError(err?.response?.data?.error || 'Failed to save student.');
@@ -333,6 +341,14 @@ export const Home = () => {
                   required
                   sx={{ flex: 1, minWidth: 180 }}
                 />
+                <TextField
+                  label="Email"
+                  name="email"
+                  value={studentForm.email}
+                  onChange={handleChangeStudent}
+                  required
+                  sx={{ flex: 1, minWidth: 180 }}
+                />
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
                   <Button type="submit" variant="contained" color="primary">
                     {editModeStudent ? 'Save' : 'Add'}
@@ -352,6 +368,7 @@ export const Home = () => {
                     <TableCell>First Name</TableCell>
                     <TableCell>Last Name</TableCell>
                     <TableCell>Mobile Number</TableCell>
+                    <TableCell>Email</TableCell>
                     <TableCell align="right">Actions</TableCell>
                   </TableRow>
                 </TableHead>
@@ -361,6 +378,7 @@ export const Home = () => {
                       <TableCell>{student.firstName}</TableCell>
                       <TableCell>{student.lastName}</TableCell>
                       <TableCell>{student.mobileNumber}</TableCell>
+                      <TableCell>{student.email}</TableCell>
                       <TableCell align="right">
                         <IconButton color="primary" onClick={() => handleEditStudent(student)}>
                           <EditIcon />
