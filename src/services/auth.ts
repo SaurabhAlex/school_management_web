@@ -12,54 +12,66 @@ export interface RegisterData extends LoginCredentials {
 export type UserRole = 'student' | 'faculty' | 'admin';
 
 export interface AuthResponse {
+  message: string;
   token: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    role?: UserRole;
-    firstName?: string;
-    lastName?: string;
-  };
+  userId: string;
+  role?: UserRole;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 export const authService = {
   async login(credentials: LoginCredentials, role: UserRole): Promise<AuthResponse> {
-    let endpoint = '/auth/login'; // Default admin endpoint
+    let endpoint = '/api/auth/login'; // Default admin endpoint
     
     switch (role) {
       case 'faculty':
-        endpoint = '/auth/faculty/login';
+        endpoint = '/api/auth/faculty/login';
         break;
       case 'student':
-        endpoint = '/auth/student/login';
+        endpoint = '/api/auth/student/login';
         break;
       case 'admin':
-        endpoint = '/auth/login'; // Admin uses the default login endpoint
+        endpoint = '/api/auth/login'; // Admin uses the default login endpoint
         break;
     }
     
     const response = await api.post<AuthResponse>(endpoint, credentials);
     
-    // Ensure role is set in the user object
+    // Store the token and user data
+    localStorage.setItem('token', response.data.token);
+    
+    // Create user object from response data
     const userData = {
-      ...response.data.user,
-      role: role // Set the role explicitly
+      id: response.data.userId,
+      email: response.data.email || credentials.email,
+      role: role,
+      firstName: response.data.firstName,
+      lastName: response.data.lastName
     };
     
-    localStorage.setItem('token', response.data.token);
     localStorage.setItem('user', JSON.stringify(userData));
     
     return {
       ...response.data,
-      user: userData
+      role: role // Ensure role is included in response
     };
   },
 
   async register(data: RegisterData): Promise<AuthResponse> {
-    const response = await api.post<AuthResponse>('/auth/signup', data);
+    const response = await api.post<AuthResponse>('/api/auth/signup', data);
     localStorage.setItem('token', response.data.token);
-    localStorage.setItem('user', JSON.stringify(response.data.user));
+    
+    const userData = {
+      id: response.data.userId,
+      email: data.email,
+      role: 'student' as UserRole, // Default role for new registrations
+      firstName: response.data.firstName,
+      lastName: response.data.lastName
+    };
+    
+    localStorage.setItem('user', JSON.stringify(userData));
     return response.data;
   },
 
@@ -73,7 +85,7 @@ export const authService = {
     return localStorage.getItem('token');
   },
 
-  getUser(): AuthResponse['user'] | null {
+  getUser(): { id: string; email: string; role?: UserRole; firstName?: string; lastName?: string; } | null {
     try {
       const userStr = localStorage.getItem('user');
       if (!userStr) return null;
